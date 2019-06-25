@@ -1,0 +1,38 @@
+---
+- hosts: BOTP
+  remote_user: hcladmin
+  become: yes
+  tasks:
+    - name: This is a copy command we are testing.
+      copy:
+        src: /etc/fstab
+        dest: /etc/fstab_ansible
+        backup: yes
+        remote_src: yes
+    - name: This is to comment the old /sapmedia_BOTP file
+      lineinfile: 
+        path: /etc/fstab
+        state: present
+        regexp: "10.204.34.211:/D"
+        line: "#10.204.34.211:/D        /sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
+
+    - name: This is to comment the old /sapmedia_BOTP
+      lineinfile:
+        path: /etc/fstab
+        state: present
+        regexp: "10.204.50.200:/sapmedia_BOTP"
+        line: "#10.204.50.200:/sapmedia_BOTP        /sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
+  
+    - name: This is to add the new /sapmedia_BOTP at the end of the Fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "10.204.66.201:/sapmedia_BOTP  	  /sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
+    
+    - name: This is to mount the new /sapmedia_BOTP into the systems
+      shell: "{{item}}"
+      with_items: 
+        - fuser -km /sapmedia_BOTP
+        - umount /sapmedia_BOTP
+        - mount -t nfs4 10.204.66.201:/sapmedia_BOTP /sapmedia_BOTP
+     ignore_errors: true 
+

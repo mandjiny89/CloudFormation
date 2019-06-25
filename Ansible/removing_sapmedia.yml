@@ -1,0 +1,22 @@
+--- 
+# This is to remove the old sapmedia
+- hosts: botp
+  remote_user: ansible
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Copy the current fstab to the current date on destination system
+      command:
+      - cp -prf /etc/fstab /etc/fstab_+%Y%m%d 
+    - name: Unmount old sapmedia_BOTP
+      shell: "{{item}}"
+      with_items:
+        - fuser -km /sapmedia_BOTP
+        - umount /sapmedia_BOTP
+        - mount -t nfs4 10.204.66.201:/sapmedia_BOTP /sapmedia_BOTP
+    - name: Remove old sapmedia entry from Fstab entry and add the new sapmedia_BOTP. 
+      blockinfile:
+      path: /etc/fstab
+      marker: "10.204.34.211:/D        /sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
+      marker: "10.204.50.200:/sapmedia_BOTP        /sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
+      block: "10.204.66.201:/sapmedia_BOTP	/sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"

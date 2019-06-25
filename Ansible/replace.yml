@@ -1,0 +1,26 @@
+---
+- hosts: server2
+  remote_user: root
+  become: yes
+  tasks:
+    - name: This is a copy command we are testing.
+      copy: 
+        src: /etc/fstab
+        dest: /etc/fstab_ansible
+        remote_src: yes
+    - name: This is to unmount the current /sapmedia_BOTP
+      shell: "{{ item }}"
+      with_items:
+        - fuser -km /sapmedia_BOTP
+        - umount /sapmedia_BOTP
+    - name: This is to replace the old /sapmedia_BOTP file.
+      replace:
+        path: /etc/fstab
+        regexp: "{{item}}"
+        replace: "10.204.66.201:/sapmedia_BOTP	/sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"      
+      with_items: 
+        - '(.*10.204.34.211:/D.*)'
+        - '(.*10.204.50.200:/sapmedia_BOTP.*)'
+
+ 
+

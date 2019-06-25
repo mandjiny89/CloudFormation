@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: 2010-09-09
+#This Template has Resource only Single EC2 Instance running with-in a VPC connecting to Public network using IGW
+Resources:
+  MyEc2Instance:
+    Type: "AWS::EC2::Instance"
+    DependsOn:
+      - MySecurityGroup
+#      - MySGIngress
+    Properties:
+      AvailabilityZone: eu-west-1a
+      ImageId: ami-466768ac
+      InstanceInitiatedShutdownBehavior: terminate # This terminate is case sensitive
+      KeyName: Resources
+      Monitoring: False
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      SubnetId: !Ref MySubnet
+      Tags:
+        - Key: Name
+          Value: WebServer
+        - Key: Group
+          Value: Belongs to Webserver VPC
+#      UserData: String
+
+  MyVpc:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: 192.168.0.0/16
+      EnableDnsSupport: True # This is also case sensitive
+      EnableDnsHostnames: True # This is also case sensitive
+      Tags:
+        - Key: Name
+          Value: Webserver
+
+  MyIgw:
+    Type: AWS::EC2::InternetGateway
+    Properties: # {} user this open curly brackets if you don't have any properties
+      Tags:
+        - Key: Name
+          Value: WebServerIGW
+
+  MyVpcGwAttachement:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    DependsOn:
+      - MyVpc
+      - MyIgw
+    Properties:
+      InternetGatewayId: !Ref MyIgw
+      VpcId: !Ref MyVpc
+    DependsOn:
+      - MyVpc
+      - MyIgw
+#      VpnGatewayId: String
+
+  MyRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: Public
+
+  MyRoute:
+    Type: "AWS::EC2::Route"
+    DependsOn: MyVpcGwAttachement
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref MyRouteTable
+      GatewayId: !Ref MyIgw
+#     EgressOnlyInternetGatewayId: !Ref MyIgw
+#     InstanceId: !Ref MyEc2Instance # You must specify only one of the following properties: EgressOnlyInternetGatewayId, GatewayId, InstanceId, NatGatewayId, NetworkInterfaceId, or VpcPeeringConnectionId
+
+  MySubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: eu-west-1a
+      CidrBlock: 192.168.1.0/24
+      MapPublicIpOnLaunch: True
+      Tags:
+        - Key: Name
+          Value: PublicSubnetGroup
+      VpcId: !Ref MyVpc
+
+  MySubnetRTAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref MyRouteTable
+      SubnetId: !Ref MySubnet
+
+  MySecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: SSH-Group
+      GroupDescription: This SG will be used to access Ec2 in Public network
+#      SecurityGroupEgress:
+#        - Security Group Rule
+      SecurityGroupIngress:
+#        - !Ref MySGIngress
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: SSH and HTTP
+        - Key: Account
+          Value: Production
+      VpcId: !Ref MyVpc
+
+#  MySGIngress:
+#    Type: 'AWS::EC2::SecurityGroupIngress'
+#    Properties:
+#      GroupName: !Ref MySecurityGroup
+#      IpProtocol: tcp
+#      FromPort: '80'
+#      ToPort: '80'
+#      CidrIp: 0.0.0.0/0
+##      SourceSecurityGroupName: !Ref MySecurityGroup
+##     - GroupName: !Ref MySecurityGroup
+##       IpProtocol: tcp
+##       FromPort: '22'
+##       ToPort: '22'
+##       CidrIp: 0.0.0.0/0
+##       SourceSecurityGroupName: !Ref MySecurityGroup

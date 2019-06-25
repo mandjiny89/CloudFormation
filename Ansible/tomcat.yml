@@ -1,0 +1,23 @@
+--- 
+#This is the tomcat code
+- hosts: server2.abc.com
+  remote_user: ansible
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Install openjdk for tomcat application support
+      yum: name=java-1.8.0-openjdk state=installed
+    - name: Remove older version of tomcat if there is one
+      file: path:/usr/local/tomcat state:=absent
+    - name: Download Tomcat
+      get_url: url=http://mirrors.ukfast.co.uk/sites/ftp.apache.org/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz dest=/tmp
+    - name: Extract the tar file 
+      unarchive: src:/tmp/apache-tomcat-8.5.41.tar.gz dest:/usr/local/tomcat copy=no # Copy command will stop copy if there is a folder already exist. 
+    - name: create tomcat user to login # First we need to edit the file manually on controller place it so we can use the source to copy to the machine we going to deploy. The file will be under apache-tomcat/conf/ folder.
+      copy: scr=/home/test/playbooks/tomcat-users.xml dest=/usr/local/tomcat/apache-tomcat-8.5.41/conf/
+    - name: Deploy sample application copied from web
+      copy: src=/usr/local/tomcat/sample.war dest=/usr/local/tomcat/apache-tomcat-8.5.41/webapps
+    - name: Start Tomcat services
+      command: nohup /usr/local/tomcat/apache-tomcat-8.5.41/bin/startup.sh $
+     
+      

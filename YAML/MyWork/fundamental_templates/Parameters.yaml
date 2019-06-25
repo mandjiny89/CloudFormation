@@ -1,0 +1,209 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Metadata:
+Description: 'This Template has Parameters, Resources and Output which will run Single EC2 Instance
+  and configure and run basic webserver with default page using a Public IGW.'
+
+Parameters:
+  MyDescriptionParameter:
+    Type: String
+    Description: >-
+      This is the basic parameters code to reference in the Future.
+
+#  MyVpcp:
+#    Type: AWS::EC2::VPC::Id
+#    Description: If you want to use this Parameter please change all the values in resources and create a predefined VPC ID in user account.
+#    ConstraintDescription: must be a valid VPC ID which should be created in user account
+
+  MyInstanceType:
+    Type: String
+    Description: >-
+      By default t2.micro will be detected,
+      if you want to make any change please select the appropriate type.
+    Default: t2.micro
+    AllowedValues: # Below section is called list
+      - t2.micro
+      - t2.small
+      - m1.small
+      - m2.large
+    ConstraintDescription: Must be a valid Ec2 instance
+
+  MyAZ:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: We just using Ireland as our Region.
+    ConstraintDescription: Must be a valid Availability Zone.
+
+  MyKeyName:
+    Type: "AWS::EC2::KeyPair::KeyName"
+    Description: Key will be pre-created in the AWS environment which can be used using this parameters.
+
+  MySubnetCIDR:
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: must be a valid CIDR range like x.x.x.x/x
+
+#  Ec2SubnetIpBlocks:
+#    Description: "Comma-delimited list of three CIDR blocks, is a alternative way to create multiple Subnet"
+#    Type: CommaDelimitedList
+#    Default: "192.168.1.0/24, 192.168.2.0/24, 192.168.3.0/24"
+
+  PortSSH:
+    Type: Number
+    MinValue: 0
+    MaxValue: 1024
+    ConstraintDescription: Must be valid port number
+  PortHTTP:
+    Type: Number
+    MinValue: 0
+    MaxValue: 1024
+    ConstraintDescription: Must be valid port number
+
+Resources:
+  MyEc2Instance:
+    Type: "AWS::EC2::Instance"
+    DependsOn:
+      - MySecurityGroup
+#      - MySGIngress
+    Properties:
+      AvailabilityZone: !Ref MyAZ
+      ImageId: ami-466768ac
+      InstanceType: !Ref MyInstanceType
+      InstanceInitiatedShutdownBehavior: terminate # This terminate is case sensitive
+      KeyName: !Ref MyKeyName
+      Monitoring: False
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      SubnetId: !Ref MySubnet
+      Tags:
+        - Key: Name
+          Value: WebServer
+        - Key: Group
+          Value: Belongs to Webserver VPC
+#      UserData: !Base64 |
+#           #!/bin/bash
+#           sudo yum update -y
+#           sudo yum install php-gd -y
+#           sudo yum install php php-mysqlnd -y
+#           sudo yum install php-mbstring -y
+#           sudo yum install mariadb-server mariadb-libs -y
+#           sudo systemctl start mariadb
+#           sudo systemctl start httpd
+#           sudo systemctl enable mariadb
+#           sudo systemctl enable mariadb
+#           cd /var/www/html/
+#           sudo chown ec2-user /var/www/html
+
+  MyVpc:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: 192.168.0.0/16
+      EnableDnsSupport: True # This is also case sensitive
+      EnableDnsHostnames: True # This is also case sensitive
+      Tags:
+        - Key: Name
+          Value: Webserver
+
+  MyIgw:
+    Type: AWS::EC2::InternetGateway
+    Properties: # {} user this open curly brackets if you don't have any properties
+      Tags:
+        - Key: Name
+          Value: WebServerIGW
+
+  MyVpcGwAttachement:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    DependsOn:
+      - MyVpc
+      - MyIgw
+    Properties:
+      InternetGatewayId: !Ref MyIgw
+      VpcId: !Ref MyVpc
+#      VpnGatewayId: String
+
+  MyRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: Public
+
+  MyRoute:
+    Type: "AWS::EC2::Route"
+    DependsOn: MyVpcGwAttachement
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref MyRouteTable
+      GatewayId: !Ref MyIgw
+#     EgressOnlyInternetGatewayId: !Ref MyIgw
+#     InstanceId: !Ref MyEc2Instance # You must specify only one of the following properties: EgressOnlyInternetGatewayId, GatewayId, InstanceId, NatGatewayId, NetworkInterfaceId, or VpcPeeringConnectionId
+
+  MySubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: eu-west-1a
+      CidrBlock: !Ref MySubnetCIDR
+      MapPublicIpOnLaunch: True
+      Tags:
+        - Key: Name
+          Value: PublicSubnetGroup
+      VpcId: !Ref MyVpc
+
+#  Ec2Subnet1:
+#    Type: AWS::EC2::Subnet
+#    Properties:
+#      VpcId: !Ref MyVpc
+#      MapPublicIpOnLaunch: True
+#      # the select function allows us to select across a list
+#      CidrBlock: !Select [0, !Ref Ec2SubnetIpBlocks]
+#  Ec2Subnet2:
+#    Type: AWS::EC2::Subnet
+#    Properties:
+#      VpcId: !Ref MyVpc
+#      # the select function allows us to select across a list
+#      CidrBlock: !Select [1, !Ref Ec2SubnetIpBlocks]
+#  Ec2Subnet3:
+#    Type: AWS::EC2::Subnet
+#    Properties:
+#      VpcId: !Ref MyVpc
+#      # the select function allows us to select across a list
+#      CidrBlock: !Select [2, !Ref Ec2SubnetIpBlocks]
+
+  MySubnetRTAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref MyRouteTable
+      SubnetId: !Ref MySubnet
+
+  MySecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: SSH-Group
+      GroupDescription: This SG will be used to access Ec2 in Public network
+#      SecurityGroupEgress:
+#        - Security Group Rule
+      SecurityGroupIngress:
+#        - !Ref MySGIngress
+        - IpProtocol: tcp
+          FromPort: !Ref PortSSH
+          ToPort: !Ref PortSSH
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: !Ref PortHTTP
+          ToPort: !Ref PortHTTP
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: SSH and HTTP
+        - Key: Account
+          Value: Production
+      VpcId: !Ref MyVpc
+
+Outputs:
+  MyOutput:
+    Value: !GetAtt MyEc2Instance.PublicIp
+    Description: This will get me my EC2 instance public IP
+    Export:
+      Name: PublicIp
