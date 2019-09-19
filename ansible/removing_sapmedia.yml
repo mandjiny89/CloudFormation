@@ -17,6 +17,6 @@
     - name: Remove old sapmedia entry from Fstab entry and add the new sapmedia_BOTP. 
       blockinfile:
       path: /etc/fstab
-      marker: "10.204.34.211:/D        /sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
-      marker: "10.204.50.200:/sapmedia_BOTP        /sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
-      block: "10.204.66.201:/sapmedia_BOTP	/sapmedia_BOTP  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
+      marker: "10.0.0.1:/sapmedia        /sapmedia  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
+      marker: "10.0.0.2:/sapmedia        /sapmedia  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"
+      block: "10.0.0.1:/sapmedia	/sapmedia  nfs4    nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport        0       0"

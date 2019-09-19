@@ -8,9 +8,9 @@
     user_password: "$6$ansible$IwSzE2RB6pzfc2byyIu48zaAvIvKcw9Y8bTsRaFkULlU0I5eV3w5zzGX5NfPSgO/lMmToxL/0YbaPaxUU9LaJ0"
 
   tasks:
-    - name: Remove the user 'justin.trzcinski'
+    - name: Remove the user 'just'
       user:
-        name: justin.trzcinski
+        name: just
         state: absent
         remove: yes  # This is used to remove the home directory of the respective user
 
@@ -24,8 +24,8 @@
         update_password: on_create
         password: "{{user_password}}"
       with_items:
-        - michal.plandor
-        - rohit.khanna 
+        - mic
+        - khanna 
       register: user_creation
     - debug: 
         msg: "{{user_creation}}"
@@ -33,16 +33,16 @@
     - name: Giving sudo permissions
       lineinfile:
         path: "/etc/sudoers"
-        regexp: "^justin"
+        regexp: "^just"
         state: absent
         line: "{{item}}"
       with_items:
-          - michal.plandor	ALL=(ALL)	ALL
-          - rohit.khanna	ALL=(ALL)	ALL   
+          - mic	ALL=(ALL)	ALL
+          - khanna	ALL=(ALL)	ALL   
         
     - name: This is to ask user to change the password at login
       shell: "{{item}}"
       with_items:
-        - creates="/home/michal.plandor" chage -d 0 michal.plandor 
-        - creates="/home/rohit.khanna" chage -d 0 rohit.khanna
+        - creates="/home/mic" chage -d 0 mic 
+        - creates="/home/khanna" chage -d 0 khanna
       when: user_creation.changed == true
